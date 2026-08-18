@@ -1,0 +1,20 @@
+{
+  "name": "@mcpx/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "check": "bunx tsc --noEmit",
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.0.0",
+    "@mcpx/core": "workspace:*",
+    "@mcpx/providers": "workspace:*",
+    "citty": "^0.2.2",
+    "picocolors": "^1.1.1"
+  }
+}

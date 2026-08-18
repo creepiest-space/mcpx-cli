@@ -1,0 +1,22 @@
+{
+  "name": "@mcpx/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/config/index.ts",
+    "./detection": "./src/detection/index.ts",
+    "./providers": "./src/providers/index.ts",
+    "./sync": "./src/sync/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "check": "bunx tsc --noEmit",
+    "build": "bun build ./src/index.ts --outdir ./dist",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "zod": "^4.4.0"
+  }
+}

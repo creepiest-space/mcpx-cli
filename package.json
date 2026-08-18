@@ -1,0 +1,62 @@
+{
+  "name": "mcpx-cli",
+  "version": "0.1.0",
+  "description": "Manage and synchronize MCP server configurations across AI development tools",
+  "keywords": [
+    "ai",
+    "claude",
+    "cli",
+    "codex",
+    "configuration",
+    "copilot",
+    "cursor",
+    "intellij",
+    "mcp",
+    "model-context-protocol",
+    "opencode",
+    "vscode"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Dmitriy Pyankov",
+    "email": "mail@zerodi.ru"
+  },
+  "bin": {
+    "mcpx": "./apps/cli/dist/index.js"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "files": [
+    "apps/cli/dist/index.js",
+    "docs/audit.md"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check": "bun run lint && bun run format:check && turbo check",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "test": "turbo test",
+    "prepack": "bun run check && bun run test && bun run build",
+    "pack:dry-run": "bun pm pack --dry-run"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "turbo": "^2.10.10",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  },
+  "packageManager": "bun@1.3.14"
+}
