@@ -1,53 +1,51 @@
 # MCPX CLI
 
-MCPX manages one canonical MCP server configuration and synchronizes it with multiple AI development
-tools. It provides an interactive wizard as well as commands suitable for day-to-day maintenance.
+Keep your MCP servers in sync across AI development tools.
 
-> [!WARNING]
-> MCPX is under active development. Back up important provider configuration files before using
-> `sync` or removing providers. The current safety and migration findings are documented in
-> [`docs/audit.md`](docs/audit.md).
+MCPX stores your server definitions in one canonical configuration and generates the native files
+used by Claude Code, Cursor, Codex, OpenCode, VS Code, IntelliJ IDEA, and other supported tools.
+Use the interactive wizard for setup or individual commands for automation.
 
-## Features
+## Why MCPX?
 
-- One validated configuration for local `stdio` and remote HTTP MCP servers
-- Project and global configuration scopes
-- Interactive setup, add, remove, enable, disable, import, sync, and status flows
-- Adapters for JSON, JSONC, and TOML provider formats
-- Zod validation at canonical and provider boundaries
-- Deterministic canonical output and atomic filesystem writes
+- Configure an MCP server once and reuse it across multiple tools.
+- Manage project-specific and global configurations separately.
+- Import existing tool configurations instead of starting over.
+- Preserve unrelated settings and comments in shared configuration files.
+- Detect missing, invalid, or out-of-date generated configurations.
+- Use local `stdio` servers and remote HTTP servers.
 
 ## Requirements
 
-- [Bun](https://bun.sh/) 1.3 or newer
+- Node.js 20 or newer
+- npm, included with Node.js
 
-## Installation
-
-Once the package is published:
+## Install
 
 ```bash
-bun add --global @zerodi/mcpx-cli
-mcpx --help
+npm install --global @creepiest-space/mcpx-cli
 ```
 
-To run the current source checkout:
+Confirm the installation:
 
 ```bash
-bun install
-bun run build
-bun link
+mcpx --version
 mcpx --help
 ```
 
 ## Quick start
 
-Run the wizard in a project directory:
+Open a project directory and start the setup wizard:
 
 ```bash
+cd my-project
 mcpx init
 ```
 
-Then inspect and synchronize the configuration:
+The wizard lets you select tools, create MCP servers, import detected configurations, and generate
+the required files.
+
+After setup, use these commands for day-to-day work:
 
 ```bash
 mcpx list
@@ -55,44 +53,150 @@ mcpx status
 mcpx sync
 ```
 
-Use an explicit scope when changing global configuration:
+## Common workflows
+
+### Add a server
+
+```bash
+mcpx add context7
+```
+
+MCPX asks for the transport and connection details, updates the canonical configuration, and offers
+to synchronize the selected tools.
+
+### Import existing servers
+
+Detect an existing tool configuration and choose which servers to import:
+
+```bash
+mcpx import
+```
+
+Import every detected server from a specific tool without selection prompts:
+
+```bash
+mcpx import cursor --all
+```
+
+When a server name already exists, choose a conflict policy:
+
+```bash
+mcpx import cursor --all --conflict skip
+mcpx import cursor --all --conflict overwrite
+mcpx import cursor --all --conflict rename
+```
+
+### Enable or disable a server
+
+```bash
+mcpx disable filesystem
+mcpx enable filesystem
+```
+
+Disabled servers remain in the canonical configuration but are omitted or marked disabled according
+to each tool's native format.
+
+### Remove a server
+
+```bash
+mcpx remove filesystem
+```
+
+Skip the confirmation prompt when scripting:
+
+```bash
+mcpx remove filesystem --yes
+```
+
+### Check and repair generated configurations
+
+```bash
+mcpx status
+mcpx sync
+```
+
+`status` reports missing, invalid, or out-of-date tool configurations. `sync` regenerates them from
+the canonical configuration.
+
+### Work with another directory
+
+You do not need to change the current working directory:
+
+```bash
+mcpx status --dir ../another-project
+mcpx sync --dir ../another-project
+```
+
+## Project and global configurations
+
+MCPX supports two independent scopes:
+
+| Scope   | Canonical file       | Use it for                                      |
+| ------- | -------------------- | ----------------------------------------------- |
+| Project | `.agents/mcp.json`   | Servers and tools used by one repository        |
+| Global  | `~/.agents/mcp.json` | Servers and tools available across your machine |
+
+Use `--scope global` when you want to modify global configuration:
 
 ```bash
 mcpx init --scope global
 mcpx add context7 --scope global
+mcpx sync --scope global
 ```
 
-Without `--scope`, MCPX uses the project configuration when it exists, otherwise an existing global
-configuration, and otherwise creates a project configuration. Pass `--scope project` or
-`--scope global` to avoid ambiguity.
+Without an explicit scope:
+
+- `list` and `status` use project configuration when it exists, then fall back to global
+  configuration.
+- Commands that make changes use project scope and never silently modify global configuration.
+- Commands run against your home directory use global scope.
 
 ## Commands
 
-| Command                  | Description                                      |
-| ------------------------ | ------------------------------------------------ |
-| `mcpx init`              | Configure MCPX interactively                     |
-| `mcpx add [name]`        | Add an MCP server                                |
-| `mcpx remove [name]`     | Remove an MCP server (`-y` skips confirmation)   |
-| `mcpx enable <name>`     | Enable a canonical server                        |
-| `mcpx disable <name>`    | Disable a canonical server                       |
-| `mcpx list`              | List canonical servers                           |
-| `mcpx import [provider]` | Import servers from an existing provider config  |
-| `mcpx sync`              | Regenerate selected provider configuration files |
-| `mcpx status`            | Show provider synchronization status             |
+| Command                  | Description                             |
+| ------------------------ | --------------------------------------- |
+| `mcpx init`              | Run the interactive setup wizard        |
+| `mcpx add [name]`        | Add an MCP server                       |
+| `mcpx remove [name]`     | Remove an MCP server                    |
+| `mcpx enable <name>`     | Enable a server                         |
+| `mcpx disable <name>`    | Disable a server                        |
+| `mcpx list`              | List canonical servers                  |
+| `mcpx import [provider]` | Import servers from an existing tool    |
+| `mcpx status`            | Check generated tool configurations     |
+| `mcpx sync`              | Regenerate selected tool configurations |
 
-Common options:
+Options available to every command:
 
-- `-d, --dir <path>` selects the project directory.
-- `--scope project|global` selects the canonical configuration scope.
-- `--verbose` shows detailed output.
+| Option                    | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `-d, --dir <path>`        | Use a different project directory        |
+| `--scope project\|global` | Select project or global configuration   |
+| `--verbose`               | Show diagnostics and detailed error data |
+| `--help`                  | Show command-specific help               |
 
-Run `mcpx <command> --help` for command-specific usage.
+Run `mcpx <command> --help` to see arguments specific to a command.
+
+## Supported tools
+
+| Tool               | Provider ID       | Project | Global |
+| ------------------ | ----------------- | :-----: | :----: |
+| Claude Code        | `claude-code`     |    ✓    |   ✓    |
+| Cursor             | `cursor`          |    ✓    |   ✓    |
+| Antigravity CLI    | `antigravity-cli` |    ✓    |   ✓    |
+| Kimi CLI           | `kimi-cli`        |    ✓    |   ✓    |
+| OpenAI Codex       | `openai-codex`    |    ✓    |   ✓    |
+| OpenCode           | `opencode`        |    ✓    |   ✓    |
+| GitHub Copilot CLI | `copilot-cli`     |    ✓    |   ✓    |
+| VS Code            | `vscode`          |    ✓    |   —    |
+| IntelliJ IDEA      | `intellij`        |    ✓    |   —    |
+
+MCPX respects `KIMI_CODE_HOME` and `COPILOT_HOME` when resolving global configurations. OpenCode
+global detection supports both `opencode.jsonc` and `opencode.json`.
 
 ## Canonical configuration
 
-Project configuration lives at `.agents/mcp.json`; global configuration lives at
-`~/.agents/mcp.json`. The version 1 format contains the selected providers and explicitly enabled
-`stdio` or HTTP servers:
+Most users can manage configuration entirely through the CLI. If you need to inspect or edit it,
+the canonical format looks like this:
 
 ```json
 {
@@ -102,7 +206,7 @@ Project configuration lives at `.agents/mcp.json`; global configuration lives at
     "filesystem": {
       "enabled": true,
       "transport": "stdio",
-      "command": "bunx",
+      "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "."]
     },
     "context7": {
@@ -114,75 +218,53 @@ Project configuration lives at `.agents/mcp.json`; global configuration lives at
 }
 ```
 
-Server names may contain letters, digits, `.`, `_`, and `-`, and must start with a letter or digit.
-HTTP URLs must use `http` or `https`.
+Server names may contain letters, numbers, `.`, `_`, and `-`, and must start with a letter or number.
+HTTP server URLs must use `http` or `https`.
 
-## Supported providers
-
-| Provider           | Identifier        | Project path                     | Global path                            |
-| ------------------ | ----------------- | -------------------------------- | -------------------------------------- |
-| Claude Code        | `claude-code`     | `.mcp.json`                      | `~/.claude.json`                       |
-| Cursor             | `cursor`          | `.cursor/mcp.json`               | `~/.cursor/mcp.json`                   |
-| Antigravity CLI    | `antigravity-cli` | `.gemini/config/mcp_config.json` | `~/.gemini/config/mcp_config.json`     |
-| Kimi CLI           | `kimi-cli`        | `.kimi-code/mcp.json`            | `$KIMI_CODE_HOME/mcp.json` or fallback |
-| OpenAI Codex       | `openai-codex`    | `.codex/config.toml`             | `~/.codex/config.toml`                 |
-| OpenCode           | `opencode`        | `opencode.json`                  | `~/.config/opencode/opencode.jsonc`    |
-| GitHub Copilot CLI | `copilot-cli`     | `.copilot/mcp-config.json`       | `~/.copilot/mcp-config.json`           |
-| VS Code            | `vscode`          | `.vscode/mcp.json`               | Not supported                          |
-| IntelliJ IDEA      | `intellij`        | `.idea/mcp.json`                 | Not supported                          |
-
-Kimi falls back to `~/.kimi-code/mcp.json` when `KIMI_CODE_HOME` is not set. OpenCode also detects
-`~/.config/opencode/opencode.json` as a global candidate.
-
-## Repository layout
-
-```text
-apps/
-  cli/                    # Citty commands, output, and Clack wizard
-packages/
-  core/                   # Zod model, persistence, provider contracts, and sync engine
-  providers/              # JSON, JSONC, and TOML provider adapters
-tmp/
-  mcpx-david/             # Read-only reference implementation
-  mcpx-thoroc/            # Read-only reference implementation
-```
-
-The dependency direction is `apps/cli -> packages/providers -> packages/core`, with the CLI also
-depending directly on core. The `tmp/` repositories are references and are not part of the build or
-published package.
-
-## Development
+After editing the file manually, validate and apply it with:
 
 ```bash
-bun install
-bun run format
-bun run check
-bun run test
-bun run build
-bun run index.ts --help
+mcpx status
+mcpx sync
 ```
 
-`bun run check` runs Oxlint, verifies Oxfmt output, and type-checks every workspace package.
+## Safe synchronization
 
-To inspect the exact package contents before publishing:
+MCPX updates only the MCP sections it manages. It preserves unrelated settings in shared JSON,
+JSONC, and TOML files, including JSONC and Codex TOML comments outside generated values. Invalid
+existing files are reported and left unchanged. Writes are atomic and generated configuration files
+use restrictive permissions.
+
+## Automation and exit codes
+
+Commands return stable exit codes for scripts and CI:
+
+| Code | Meaning                                                         |
+| ---- | --------------------------------------------------------------- |
+| `0`  | Success, no change required, or interactive cancellation        |
+| `1`  | Missing or out-of-date configuration, or an operational failure |
+| `2`  | Invalid arguments or an unknown requested resource              |
+
+For example, use `mcpx status` in CI to fail when generated configurations need synchronization.
+
+## Troubleshooting
+
+Show detailed provider-detection diagnostics and error information:
 
 ```bash
-bun pm pack --dry-run
+mcpx status --verbose
+mcpx sync --verbose
 ```
 
-Publishing runs the complete check, test, and build pipeline through the `prepack` script:
+If MCPX cannot find a canonical configuration, run `mcpx init` in the project or explicitly select
+the global scope with `--scope global`.
+
+## Update or uninstall
 
 ```bash
-bun publish
+npm install --global @creepiest-space/mcpx-cli@latest
+npm uninstall --global @creepiest-space/mcpx-cli
 ```
-
-## Acknowledgements
-
-This work is inspired by:
-
-- [gustavodiasdev/mcpx-cli](https://github.com/gustavodiasdev/mcpx-cli)
-- [davidpastorvicente/mcpx-cli](https://github.com/davidpastorvicente/mcpx-cli) and
-- [thoroc/mcpx-cli](https://github.com/thoroc/mcpx-cli).
 
 ## License
 

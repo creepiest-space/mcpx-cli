@@ -1,8 +1,9 @@
-import { homedir } from "node:os";
-import { resolve } from "node:path";
-import type { ConfigScope } from "../types";
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
 
-export const PROJECT_CONFIG_DISPLAY_PATH = ".agents/mcp.json";
+import type { ConfigScope } from '../types/index.ts';
+
+export const PROJECT_CONFIG_DISPLAY_PATH = '.agents/mcp.json';
 export const GLOBAL_CONFIG_DISPLAY_PATH = `~/${PROJECT_CONFIG_DISPLAY_PATH}`;
 
 export function getProjectConfigPath(projectRoot: string): string {
@@ -18,7 +19,7 @@ export function getCanonicalConfigPath(
   scope: ConfigScope,
   homeDirectory = homedir(),
 ): string {
-  return scope === "global"
+  return scope === 'global'
     ? getGlobalConfigPath(homeDirectory)
     : getProjectConfigPath(projectRoot);
 }

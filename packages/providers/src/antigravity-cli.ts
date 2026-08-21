@@ -1,6 +1,9 @@
-import { resolve } from "node:path";
-import type { McpServerConfig } from "@mcpx/core";
-import { JsonSectionProvider } from "./json/json-section-provider.ts";
+import { resolve } from 'node:path';
+
+import type { McpServerConfig } from '@creepiest-space/mcpx-core';
+
+import { getProviderMetadata } from './catalog.ts';
+import { JsonSectionProvider } from './json/json-section-provider.ts';
 import {
   getBoolean,
   getString,
@@ -8,25 +11,22 @@ import {
   getStringRecord,
   parseCanonicalServer,
   type JsonObject,
-} from "./json/value.ts";
-import { getHomeDirectory, type ProviderPathOptions } from "./shared/paths.ts";
+} from './json/value.ts';
+import { getHomeDirectory, type ProviderPathOptions } from './shared/paths.ts';
 
 export class AntigravityCliProvider extends JsonSectionProvider {
   constructor(options: ProviderPathOptions = {}) {
     super(
       {
-        name: "antigravity-cli",
-        displayName: "Antigravity CLI",
-        configPath: ".gemini/config/mcp_config.json",
-        globalConfigPath: resolve(getHomeDirectory(options), ".gemini/config/mcp_config.json"),
-        capabilities: { project: true, global: true },
+        ...getProviderMetadata('antigravity-cli'),
+        globalConfigPath: resolve(getHomeDirectory(options), '.gemini/config/mcp_config.json'),
       },
-      "mcpServers",
+      'mcpServers',
     );
   }
 
   protected encodeServer(server: McpServerConfig): JsonObject {
-    if (server.transport === "stdio") {
+    if (server.transport === 'stdio') {
       return {
         ...(!server.enabled && { disabled: true }),
         command: server.command,
@@ -42,22 +42,22 @@ export class AntigravityCliProvider extends JsonSectionProvider {
   }
 
   protected decodeServer(raw: JsonObject): McpServerConfig {
-    const serverUrl = getString(raw, "serverUrl");
+    const serverUrl = getString(raw, 'serverUrl');
     if (serverUrl !== undefined) {
-      const headers = getStringRecord(raw, "headers");
+      const headers = getStringRecord(raw, 'headers');
       return parseCanonicalServer({
-        enabled: getBoolean(raw, "disabled") !== true,
-        transport: "http",
+        enabled: getBoolean(raw, 'disabled') !== true,
+        transport: 'http',
         url: serverUrl,
         ...(headers && { headers }),
       });
     }
-    const args = getStringArray(raw, "args");
-    const env = getStringRecord(raw, "env");
+    const args = getStringArray(raw, 'args');
+    const env = getStringRecord(raw, 'env');
     return parseCanonicalServer({
-      enabled: getBoolean(raw, "disabled") !== true,
-      transport: "stdio",
-      command: getString(raw, "command"),
+      enabled: getBoolean(raw, 'disabled') !== true,
+      transport: 'stdio',
+      command: getString(raw, 'command'),
       ...(args && { args }),
       ...(env && { env }),
     });

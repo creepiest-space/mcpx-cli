@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { McpConfigFileSchema, type McpConfigFile } from "../types";
+import type { z } from 'zod';
+
+import { McpConfigFileSchema, type McpConfigFile } from '../types/index.ts';
 
 export function isMcpConfigFile(value: unknown): value is McpConfigFile {
   return McpConfigFileSchema.safeParse(value).success;

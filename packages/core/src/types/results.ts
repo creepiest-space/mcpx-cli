@@ -1,6 +1,6 @@
-import type { ProviderName } from "./canonical.ts";
+import type { ProviderName } from './canonical.ts';
 
-export type SyncStatus = "created" | "updated" | "unchanged" | "deleted" | "error";
+export type SyncStatus = 'created' | 'updated' | 'unchanged' | 'cleaned' | 'error';
 
 export interface SyncResult {
   provider: ProviderName;
@@ -13,6 +13,17 @@ export interface DetectionResult {
   provider: ProviderName;
   filePath: string;
   servers: string[];
+}
+
+export interface DetectionDiagnostic {
+  provider: ProviderName;
+  filePath?: string;
+  error: string;
+}
+
+export interface DetectionReport {
+  detections: DetectionResult[];
+  diagnostics: DetectionDiagnostic[];
 }
 
 export interface ImportResult {

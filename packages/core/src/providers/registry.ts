@@ -1,10 +1,13 @@
-import type { ProviderName } from "../types/canonical.ts";
-import type { Provider } from "./provider.ts";
+import type { ProviderName } from '../types/canonical.ts';
+import type { Provider } from './provider.ts';
 
 export class ProviderRegistry {
   readonly #providers = new Map<ProviderName, Provider>();
 
   register(provider: Provider): this {
+    if (this.#providers.has(provider.name)) {
+      throw new Error(`Provider "${provider.name}" is already registered`);
+    }
     this.#providers.set(provider.name, provider);
     return this;
   }

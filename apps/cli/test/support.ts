@@ -1,5 +1,6 @@
-import type { FileSystem } from "@mcpx/core";
-import type { Output } from "../src/output";
+import type { FileSystem } from '@creepiest-space/mcpx-core';
+
+import type { Output } from '../src/output/index.ts';
 
 export class MemoryFileSystem implements FileSystem {
   readonly files = new Map<string, string>();
@@ -28,18 +29,18 @@ export class MemoryFileSystem implements FileSystem {
 export class RecordingOutput implements Output {
   readonly messages: Array<{ level: string; message: string }> = [];
   success(message: string): void {
-    this.messages.push({ level: "success", message });
+    this.messages.push({ level: 'success', message });
   }
   warning(message: string): void {
-    this.messages.push({ level: "warning", message });
+    this.messages.push({ level: 'warning', message });
   }
   error(message: string): void {
-    this.messages.push({ level: "error", message });
+    this.messages.push({ level: 'error', message });
   }
   info(message: string): void {
-    this.messages.push({ level: "info", message });
+    this.messages.push({ level: 'info', message });
   }
   debug(message: string): void {
-    this.messages.push({ level: "debug", message });
+    this.messages.push({ level: 'debug', message });
   }
 }

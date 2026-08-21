@@ -1,20 +1,21 @@
-import { ServerNameSchema } from "@mcpx/core";
+import { ServerNameSchema } from '@creepiest-space/mcpx-core';
 import type {
   ConfigScope,
   McpServerConfig,
   Provider,
   ProviderGenerateContext,
   ProviderMetadata,
-} from "@mcpx/core";
-import { updateJsoncTopLevelSection } from "../jsonc/document.ts";
-import { resolveProviderPath } from "../shared/paths.ts";
-import { getObject, isJsonObject, parseJsonObject, type JsonObject } from "./value.ts";
+} from '@creepiest-space/mcpx-core';
+
+import { removeJsoncTopLevelSection, updateJsoncTopLevelSection } from '../jsonc/document.ts';
+import { resolveProviderPath } from '../shared/paths.ts';
+import { getObject, isJsonObject, parseJsonObject, type JsonObject } from './value.ts';
 
 export abstract class JsonSectionProvider implements Provider {
   readonly name;
   readonly displayName;
   readonly configPath;
-  readonly globalConfigPath;
+  readonly globalConfigPath?: string;
   readonly capabilities;
 
   protected constructor(
@@ -24,7 +25,9 @@ export abstract class JsonSectionProvider implements Provider {
     this.name = metadata.name;
     this.displayName = metadata.displayName;
     this.configPath = metadata.configPath;
-    this.globalConfigPath = metadata.globalConfigPath;
+    if (metadata.globalConfigPath !== undefined) {
+      this.globalConfigPath = metadata.globalConfigPath;
+    }
     this.capabilities = metadata.capabilities;
   }
 
@@ -39,16 +42,17 @@ export abstract class JsonSectionProvider implements Provider {
     }
 
     if (context.existingContent !== undefined) {
-      try {
-        return ensureFinalNewline(
-          updateJsoncTopLevelSection(context.existingContent, this.sectionKey, section),
-        );
-      } catch {
-        // Invalid existing provider files are replaced with a valid document.
-      }
+      return ensureFinalNewline(
+        updateJsoncTopLevelSection(context.existingContent, this.sectionKey, section),
+      );
     }
 
     return `${JSON.stringify(this.createDocument(section), null, 2)}\n`;
+  }
+
+  cleanup(existingContent: string, _context: ProviderGenerateContext): string {
+    const content = removeJsoncTopLevelSection(existingContent, this.sectionKey);
+    return content === existingContent ? existingContent : ensureFinalNewline(content);
   }
 
   parse(content: string): Record<string, McpServerConfig> {
@@ -78,5 +82,5 @@ export abstract class JsonSectionProvider implements Provider {
 }
 
 function ensureFinalNewline(content: string): string {
-  return content.endsWith("\n") ? content : `${content}\n`;
+  return content.endsWith('\n') ? content : `${content}\n`;
 }

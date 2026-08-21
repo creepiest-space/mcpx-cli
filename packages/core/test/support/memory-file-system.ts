@@ -1,4 +1,4 @@
-import type { FileSystem } from "../../src/sync";
+import type { FileSystem } from '../../src/sync/index.ts';
 
 export class MemoryFileSystem implements FileSystem {
   readonly files = new Map<string, string>();
@@ -9,7 +9,7 @@ export class MemoryFileSystem implements FileSystem {
 
   read(path: string): Promise<string> {
     const content = this.files.get(path);
-    if (content === undefined) return Promise.reject(nodeError("ENOENT", path));
+    if (content === undefined) return Promise.reject(nodeError('ENOENT', path));
     return Promise.resolve(content);
   }
 

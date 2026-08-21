@@ -1,5 +1,5 @@
 {
-  "name": "mcpx-cli",
+  "name": "@creepiest-space/mcpx-cli",
   "version": "0.1.0",
   "description": "Manage and synchronize MCP server configurations across AI development tools",
   "keywords": [
@@ -16,47 +16,69 @@
     "opencode",
     "vscode"
   ],
+  "homepage": "https://github.com/creepiest-space/mcpx-cli#readme",
+  "bugs": {
+    "url": "https://github.com/creepiest-space/mcpx-cli/issues"
+  },
   "license": "MIT",
   "author": {
     "name": "Dmitriy Pyankov",
     "email": "mail@zerodi.ru"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/creepiest-space/mcpx-cli.git"
+  },
   "bin": {
-    "mcpx": "./apps/cli/dist/index.js"
+    "mcpx": "apps/cli/dist/index.js"
   },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "files": [
-    "apps/cli/dist/index.js",
-    "docs/audit.md"
+    "apps/cli/dist/index.js"
   ],
   "type": "module",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check": "bun run lint && bun run format:check && turbo check",
+    "test": "turbo test",
+    "test:package": "node scripts/package-smoke.mjs",
+    "typecheck": "turbo typecheck",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
+    "lint:types": "oxlint --type-aware .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "test": "turbo test",
-    "prepack": "bun run check && bun run test && bun run build",
-    "pack:dry-run": "bun pm pack --dry-run"
+    "deadcode": "knip --config ./knip.config.mts",
+    "check": "bun run format:check && bun run lint && bun run typecheck",
+    "check:full": "bun run check && bun run lint:types && bun run test && bun run deadcode && bun run build",
+    "commit": "bunx --bun czg --config=./cz.config.mts",
+    "prepare": "lefthook install",
+    "prepack": "bun run check && bun run test && bun run build"
   },
   "devDependencies": {
-    "@types/bun": "^1.3.14",
+    "@commitlint/cli": "^21.2.0",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@commitlint/types": "^21.2.0",
+    "@types/bun": "^1.4.0",
+    "@types/node": "^20.19.0",
+    "czg": "^1.13.0",
+    "knip": "^6.32.0",
+    "lefthook": "^2.1.10",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
-    "turbo": "^2.10.10",
-    "typescript": "^7.0.2"
+    "oxlint-tsgolint": "^7.0.2001",
+    "turbo": "^2.10.0",
+    "typescript": "^7.0.0"
   },
   "engines": {
-    "bun": ">=1.3.0"
+    "node": ">=20.0.0"
   },
   "packageManager": "bun@1.3.14"
 }

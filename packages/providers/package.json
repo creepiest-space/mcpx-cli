@@ -1,5 +1,5 @@
 {
-  "name": "@mcpx/providers",
+  "name": "@creepiest-space/mcpx-providers",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,12 +8,12 @@
     "./catalog": "./src/catalog.ts"
   },
   "scripts": {
-    "check": "bunx tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "build": "bun build ./src/index.ts --outdir ./dist",
     "test": "bun test"
   },
   "dependencies": {
-    "@mcpx/core": "workspace:*",
+    "@creepiest-space/mcpx-core": "workspace:*",
     "jsonc-parser": "^3.3.0",
     "smol-toml": "^1.8.0"
   }

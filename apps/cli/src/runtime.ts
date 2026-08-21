@@ -1,10 +1,11 @@
-import { resolve } from "node:path";
-import { createCliContext, type CliContext } from "./context.ts";
+import { resolve } from 'node:path';
+
+import { createCliContext, type CliContext } from './context.ts';
 
 interface RuntimeOptions {
-  dir?: string;
-  verbose?: boolean;
-  scope?: string;
+  dir?: string | undefined;
+  verbose?: boolean | undefined;
+  scope?: string | undefined;
 }
 
 let rootOptions: RuntimeOptions = {};
@@ -22,6 +23,6 @@ export function createCommandContext(options: RuntimeOptions): CliContext {
   });
 }
 
-function normalizeScope(scope: string | undefined): "project" | "global" | undefined {
-  return scope === "project" || scope === "global" ? scope : undefined;
+function normalizeScope(scope: string | undefined): 'project' | 'global' | undefined {
+  return scope === 'project' || scope === 'global' ? scope : undefined;
 }

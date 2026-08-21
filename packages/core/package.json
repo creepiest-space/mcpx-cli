@@ -1,5 +1,5 @@
 {
-  "name": "@mcpx/core",
+  "name": "@creepiest-space/mcpx-core",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "./types": "./src/types/index.ts"
   },
   "scripts": {
-    "check": "bunx tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "build": "bun build ./src/index.ts --outdir ./dist",
     "test": "bun test"
   },

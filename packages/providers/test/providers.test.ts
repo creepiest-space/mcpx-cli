@@ -1,5 +1,12 @@
-import { describe, expect, test } from "bun:test";
-import type { McpServerConfig, Provider, ProviderGenerateContext } from "@mcpx/core";
+import { describe, expect, test } from 'bun:test';
+import { resolve } from 'node:path';
+
+import type {
+  McpServerConfig,
+  Provider,
+  ProviderGenerateContext,
+} from '@creepiest-space/mcpx-core';
+
 import {
   AntigravityCliProvider,
   ClaudeCodeProvider,
@@ -10,27 +17,28 @@ import {
   KimiCliProvider,
   OpenAICodexProvider,
   OpenCodeProvider,
+  providerCatalog,
   VscodeProvider,
-} from "../src";
-import { parseJsoncDocument } from "../src/jsonc/document";
+} from '../src/index.ts';
+import { parseJsoncDocument } from '../src/jsonc/document.ts';
 
-const projectRoot = "/workspace/project";
-const homeDirectory = "/users/test";
-const context: ProviderGenerateContext = { projectRoot, scope: "project" };
+const projectRoot = '/workspace/project';
+const homeDirectory = '/users/test';
+const context: ProviderGenerateContext = { projectRoot, scope: 'project' };
 
 const servers: Record<string, McpServerConfig> = {
   local: {
     enabled: true,
-    transport: "stdio",
-    command: "npx",
-    args: ["-y", "example-server"],
-    env: { TOKEN: "secret" },
+    transport: 'stdio',
+    command: 'npx',
+    args: ['-y', 'example-server'],
+    env: { TOKEN: 'secret' },
   },
   remote: {
     enabled: true,
-    transport: "http",
-    url: "https://example.com/mcp",
-    headers: { Authorization: "Bearer token" },
+    transport: 'http',
+    url: 'https://example.com/mcp',
+    headers: { Authorization: 'Bearer token' },
   },
 };
 
@@ -38,30 +46,59 @@ function generate(
   provider: Provider,
   input: Readonly<Record<string, McpServerConfig>> = servers,
   existingContent?: string,
-  scope: "project" | "global" = "project",
+  scope: 'project' | 'global' = 'project',
 ): string {
-  return provider.generate(input, { ...context, scope, existingContent });
+  return provider.generate(input, {
+    ...context,
+    scope,
+    ...(existingContent === undefined ? {} : { existingContent }),
+  });
 }
 
-describe("provider registry", () => {
-  test("registers all canonical providers in stable order", () => {
+describe('provider registry', () => {
+  test('registers all canonical providers in stable order', () => {
     const registry = createProviderRegistry({ homeDirectory, environment: {} });
     expect(registry.getAll().map((provider) => provider.name)).toEqual([
-      "claude-code",
-      "cursor",
-      "antigravity-cli",
-      "kimi-cli",
-      "openai-codex",
-      "opencode",
-      "copilot-cli",
-      "vscode",
-      "intellij",
+      'claude-code',
+      'cursor',
+      'antigravity-cli',
+      'kimi-cli',
+      'openai-codex',
+      'opencode',
+      'copilot-cli',
+      'vscode',
+      'intellij',
     ]);
+  });
+
+  test('rejects duplicate provider registrations', () => {
+    const registry = createProviderRegistry({ homeDirectory, environment: {} });
+    expect(() => registry.register(new ClaudeCodeProvider({ homeDirectory }))).toThrow(
+      'Provider "claude-code" is already registered',
+    );
+  });
+
+  test('uses catalog metadata in every adapter', () => {
+    const registry = createProviderRegistry({ homeDirectory, environment: {} });
+    for (const metadata of providerCatalog) {
+      const provider = registry.get(metadata.name)!;
+      expect({
+        name: provider.name,
+        displayName: provider.displayName,
+        configPath: provider.configPath,
+        capabilities: provider.capabilities,
+      }).toEqual({
+        name: metadata.name,
+        displayName: metadata.displayName,
+        configPath: metadata.configPath,
+        capabilities: metadata.capabilities,
+      });
+    }
   });
 });
 
-describe("JSON provider paths", () => {
-  test("resolves injected project and global paths", () => {
+describe('JSON provider paths', () => {
+  test('resolves injected project and global paths', () => {
     const providers = [
       new ClaudeCodeProvider({ homeDirectory }),
       new CursorProvider({ homeDirectory }),
@@ -71,41 +108,65 @@ describe("JSON provider paths", () => {
     ];
 
     for (const provider of providers) {
-      expect(provider.resolveConfigPath(projectRoot, "project")).toStartWith(projectRoot);
-      expect(provider.resolveConfigPath(projectRoot, "global")).toStartWith(homeDirectory);
+      expect(provider.resolveConfigPath(projectRoot, 'project')).toBe(
+        resolve(projectRoot, provider.configPath),
+      );
+      expect(provider.resolveConfigPath(projectRoot, 'global')).toStartWith(resolve(homeDirectory));
     }
   });
 
-  test("honors KIMI_CODE_HOME", () => {
+  test('honors KIMI_CODE_HOME', () => {
     const provider = new KimiCliProvider({
       homeDirectory,
-      environment: { KIMI_CODE_HOME: "/custom/kimi" },
+      environment: { KIMI_CODE_HOME: '/custom/kimi' },
     });
-    expect(provider.resolveConfigPath(projectRoot, "global")).toBe("/custom/kimi/mcp.json");
+    expect(provider.resolveConfigPath(projectRoot, 'global')).toBe(
+      resolve('/custom/kimi', 'mcp.json'),
+    );
+  });
+
+  test('uses the official Antigravity project path', () => {
+    const provider = new AntigravityCliProvider({ homeDirectory });
+    expect(provider.resolveConfigPath(projectRoot, 'project')).toBe(
+      resolve(projectRoot, '.agents/mcp_config.json'),
+    );
+    expect(provider.resolveConfigPath(projectRoot, 'global')).toBe(
+      resolve(homeDirectory, '.gemini/config/mcp_config.json'),
+    );
+  });
+
+  test('honors COPILOT_HOME', () => {
+    const provider = new CopilotCliProvider({
+      homeDirectory,
+      environment: { COPILOT_HOME: '/custom/copilot' },
+    });
+    expect(provider.resolveConfigPath(projectRoot, 'global')).toBe(
+      resolve('/custom/copilot', 'mcp-config.json'),
+    );
   });
 });
 
-describe("Claude Code", () => {
+describe('Claude Code', () => {
   const provider = new ClaudeCodeProvider({ homeDirectory });
 
-  test("maps stdio and HTTP servers and roundtrips", () => {
+  test('maps stdio and HTTP servers and roundtrips', () => {
     const output = generate(provider);
     const raw = parseJsoncDocument(output) as { mcpServers: Record<string, unknown> };
     expect(raw.mcpServers.local).toEqual({
-      type: "stdio",
-      command: "npx",
-      args: ["-y", "example-server"],
-      env: { TOKEN: "secret" },
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', 'example-server'],
+      env: { TOKEN: 'secret' },
     });
     expect(raw.mcpServers.remote).toEqual({
-      type: "http",
-      url: "https://example.com/mcp",
-      headers: { Authorization: "Bearer token" },
+      type: 'http',
+      url: 'https://example.com/mcp',
+      headers: { Authorization: 'Bearer token' },
     });
     expect(provider.parse(output)).toEqual(servers);
   });
 
-  test("preserves JSONC comments and unrelated global settings", () => {
+  test('preserves JSONC comments and unrelated global settings', () => {
     const existing = `{
   // user preference
   "theme": "dark",
@@ -113,37 +174,50 @@ describe("Claude Code", () => {
   "mcpServers": { "old": { "command": "old" } },
 }
 `;
-    const output = generate(provider, servers, existing, "global");
-    expect(output).toContain("// user preference");
+    const output = generate(provider, servers, existing, 'global');
+    expect(output).toContain('// user preference');
     const parsed = parseJsoncDocument(output) as Record<string, unknown>;
-    expect(parsed.theme).toBe("dark");
+    expect(parsed.theme).toBe('dark');
     expect(parsed.projects).toBeDefined();
     expect((parsed.mcpServers as Record<string, unknown>).old).toBeUndefined();
   });
+
+  test('removes only the managed section during cleanup', () => {
+    const existing = `{
+  // user preference
+  "theme": "dark",
+  "mcpServers": { "github": { "command": "npx" } },
+}
+`;
+    const output = provider.cleanup(existing, { ...context, scope: 'global' });
+    expect(output).toContain('// user preference');
+    const parsed = parseJsoncDocument(output) as Record<string, unknown>;
+    expect(parsed).toEqual({ theme: 'dark' });
+  });
 });
 
-describe("Cursor", () => {
+describe('Cursor', () => {
   const provider = new CursorProvider({ homeDirectory });
 
-  test("maps stdio and HTTP servers and roundtrips", () => {
+  test('maps stdio and HTTP servers and roundtrips', () => {
     const output = generate(provider);
     const raw = parseJsoncDocument(output) as {
       mcpServers: Record<string, Record<string, unknown>>;
     };
     expect(raw.mcpServers.local).toEqual({
-      type: "stdio",
-      command: "npx",
-      args: ["-y", "example-server"],
-      env: { TOKEN: "secret" },
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', 'example-server'],
+      env: { TOKEN: 'secret' },
     });
     expect(raw.mcpServers.remote).toEqual({
-      url: "https://example.com/mcp",
-      headers: { Authorization: "Bearer token" },
+      url: 'https://example.com/mcp',
+      headers: { Authorization: 'Bearer token' },
     });
     expect(provider.parse(output)).toEqual(servers);
   });
 
-  test("preserves unrelated JSONC settings and omits disabled servers", () => {
+  test('preserves unrelated JSONC settings and omits disabled servers', () => {
     const existing = `{
   // keep user settings
   "theme": "dark",
@@ -154,68 +228,80 @@ describe("Cursor", () => {
       provider,
       {
         local: servers.local!,
-        disabled: { enabled: false, transport: "stdio", command: "bunx" },
+        disabled: { enabled: false, transport: 'stdio', command: 'bunx' },
       },
       existing,
-      "global",
+      'global',
     );
-    expect(output).toContain("// keep user settings");
+    expect(output).toContain('// keep user settings');
     const raw = parseJsoncDocument(output) as Record<string, unknown>;
-    expect(raw.theme).toBe("dark");
+    expect(raw.theme).toBe('dark');
     expect((raw.mcpServers as Record<string, unknown>).disabled).toBeUndefined();
     expect((raw.mcpServers as Record<string, unknown>).old).toBeUndefined();
-    expect(provider.resolveConfigPath(projectRoot, "project")).toBe(
-      "/workspace/project/.cursor/mcp.json",
+    expect(provider.resolveConfigPath(projectRoot, 'project')).toBe(
+      resolve(projectRoot, '.cursor/mcp.json'),
     );
-    expect(provider.resolveConfigPath(projectRoot, "global")).toBe("/users/test/.cursor/mcp.json");
+    expect(provider.resolveConfigPath(projectRoot, 'global')).toBe(
+      resolve(homeDirectory, '.cursor/mcp.json'),
+    );
   });
 });
 
-describe("provider-specific JSON mappings", () => {
-  test("Antigravity uses serverUrl and preserves disabled servers", () => {
+describe('provider-specific JSON mappings', () => {
+  test('Antigravity uses serverUrl and preserves disabled servers', () => {
     const provider = new AntigravityCliProvider({ homeDirectory });
     const output = generate(provider, {
-      disabled: { enabled: false, transport: "http", url: "https://example.com/mcp" },
+      disabled: { enabled: false, transport: 'http', url: 'https://example.com/mcp' },
     });
     const parsed = JSON.parse(output) as { mcpServers: Record<string, unknown> };
     expect(parsed.mcpServers.disabled).toEqual({
       disabled: true,
-      serverUrl: "https://example.com/mcp",
+      serverUrl: 'https://example.com/mcp',
     });
     expect(provider.parse(output).disabled?.enabled).toBe(false);
   });
 
-  test("Kimi omits disabled servers", () => {
+  test('Kimi omits disabled servers', () => {
     const provider = new KimiCliProvider({ homeDirectory, environment: {} });
     const output = generate(provider, {
-      disabled: { enabled: false, transport: "stdio", command: "npx" },
+      disabled: { enabled: false, transport: 'stdio', command: 'npx' },
     });
     expect(provider.parse(output)).toEqual({});
   });
 
-  test("Copilot emits type and tools", () => {
+  test('Copilot emits type and tools', () => {
     const provider = new CopilotCliProvider({ homeDirectory });
     const output = generate(provider, { local: servers.local! });
     const parsed = JSON.parse(output) as { mcpServers: Record<string, unknown> };
     expect(parsed.mcpServers.local).toEqual({
-      type: "stdio",
-      command: "npx",
-      args: ["-y", "example-server"],
-      env: { TOKEN: "secret" },
-      tools: ["*"],
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', 'example-server'],
+      env: { TOKEN: 'secret' },
+      tools: ['*'],
     });
+    expect(provider.resolveConfigPath(projectRoot, 'project')).toBe(
+      resolve(projectRoot, '.github/mcp.json'),
+    );
+    expect(provider.resolveConfigPath(projectRoot, 'global')).toBe(
+      resolve(homeDirectory, '.copilot/mcp-config.json'),
+    );
   });
 
-  test("VS Code maps HTTP to sse and rejects global scope", () => {
+  test('VS Code maps Streamable HTTP and accepts legacy SSE imports', () => {
     const provider = new VscodeProvider();
     const output = generate(provider, { remote: servers.remote! });
     const parsed = JSON.parse(output) as { servers: Record<string, { type: string }> };
-    expect(parsed.servers.remote?.type).toBe("sse");
-    expect(provider.parse(output).remote?.transport).toBe("http");
-    expect(() => provider.resolveConfigPath(projectRoot, "global")).toThrow();
+    expect(parsed.servers.remote?.type).toBe('http');
+    expect(provider.parse(output).remote?.transport).toBe('http');
+    expect(
+      provider.parse('{"servers":{"legacy":{"type":"sse","url":"https://example.com/sse"}}}').legacy
+        ?.transport,
+    ).toBe('http');
+    expect(() => provider.resolveConfigPath(projectRoot, 'global')).toThrow();
   });
 
-  test("IntelliJ infers transport without a type field", () => {
+  test('IntelliJ infers transport without a type field', () => {
     const provider = new IntellijProvider();
     const output = generate(provider);
     const parsed = JSON.parse(output) as { mcpServers: Record<string, Record<string, unknown>> };
@@ -224,23 +310,23 @@ describe("provider-specific JSON mappings", () => {
   });
 });
 
-describe("OpenCode", () => {
+describe('OpenCode', () => {
   const provider = new OpenCodeProvider({ homeDirectory });
 
-  test("maps command arrays, environment, remote type, and disabled state", () => {
+  test('maps command arrays, environment, remote type, and disabled state', () => {
     const output = generate(provider, {
       ...servers,
-      disabled: { enabled: false, transport: "stdio", command: "bunx", args: ["server"] },
+      disabled: { enabled: false, transport: 'stdio', command: 'bunx', args: ['server'] },
     });
     const raw = JSON.parse(output) as { mcp: Record<string, Record<string, unknown>> };
-    expect(raw.mcp.local?.command).toEqual(["npx", "-y", "example-server"]);
-    expect(raw.mcp.local?.environment).toEqual({ TOKEN: "secret" });
-    expect(raw.mcp.remote?.type).toBe("remote");
+    expect(raw.mcp.local?.command).toEqual(['npx', '-y', 'example-server']);
+    expect(raw.mcp.local?.environment).toEqual({ TOKEN: 'secret' });
+    expect(raw.mcp.remote?.type).toBe('remote');
     expect(raw.mcp.disabled?.enabled).toBe(false);
     expect(provider.parse(output).disabled?.enabled).toBe(false);
   });
 
-  test("preserves existing JSONC settings and comments", () => {
+  test('preserves existing JSONC settings and comments', () => {
     const existing = `{
   // keep
   "$schema": "https://opencode.ai/config.json",
@@ -249,56 +335,110 @@ describe("OpenCode", () => {
 }
 `;
     const output = generate(provider, servers, existing);
-    expect(output).toContain("// keep");
+    expect(output).toContain('// keep');
     const parsed = parseJsoncDocument(output) as Record<string, unknown>;
-    expect(parsed.theme).toBe("dark");
+    expect(parsed.theme).toBe('dark');
     expect((parsed.mcp as Record<string, unknown>).old).toBeUndefined();
   });
 
-  test("exposes JSONC and JSON global candidates", () => {
-    expect(provider.resolveConfigPaths(projectRoot, "global")).toEqual([
-      "/users/test/.config/opencode/opencode.jsonc",
-      "/users/test/.config/opencode/opencode.json",
+  test('exposes JSONC and JSON global candidates', () => {
+    expect(provider.resolveConfigPaths(projectRoot, 'global')).toEqual([
+      resolve(homeDirectory, '.config/opencode/opencode.jsonc'),
+      resolve(homeDirectory, '.config/opencode/opencode.json'),
     ]);
+  });
+
+  test('removes only the managed section during cleanup', () => {
+    const existing = `{
+  // keep
+  "$schema": "https://opencode.ai/config.json",
+  "theme": "dark",
+  "mcp": { "old": { "type": "local", "command": ["old"] } },
+}
+`;
+    const output = provider.cleanup(existing, context);
+    expect(output).toContain('// keep');
+    const parsed = parseJsoncDocument(output) as Record<string, unknown>;
+    expect(parsed.theme).toBe('dark');
+    expect(parsed.$schema).toBe('https://opencode.ai/config.json');
+    expect(parsed.mcp).toBeUndefined();
   });
 });
 
-describe("OpenAI Codex", () => {
+describe('OpenAI Codex', () => {
   const provider = new OpenAICodexProvider({ homeDirectory });
 
-  test("generates and parses stdio and HTTP TOML", () => {
+  test('generates and parses stdio and HTTP TOML', () => {
     const output = generate(provider);
-    expect(output).toContain("[mcp_servers.local]");
+    expect(output).toContain('[mcp_servers.local]');
     expect(output).toContain('command = "npx"');
-    expect(output).toContain("[mcp_servers.remote.http_headers]");
+    expect(output).toContain('[mcp_servers.remote.http_headers]');
     expect(provider.parse(output)).toEqual(servers);
   });
 
-  test("preserves unrelated settings while replacing mcp_servers", () => {
-    const existing = `model = "o4-mini"
+  test('preserves comments and unrelated formatting while replacing mcp_servers', () => {
+    const existing = `# before
+model='o4-mini' # inline
 
 [mcp_servers.old]
-command = "old"
+# inside managed section
+command='old'
+
+# after managed section
+[features]
+shell = true # keep
 `;
     const output = generate(provider, { local: servers.local! }, existing);
-    expect(output).toContain('model = "o4-mini"');
-    expect(output).toContain("[mcp_servers.local]");
-    expect(output).not.toContain("mcp_servers.old");
+    expect(output).toContain('# before');
+    expect(output).toContain("model='o4-mini' # inline");
+    expect(output).toContain('# inside managed section');
+    expect(output).toContain('# after managed section');
+    expect(output).toContain('shell = true # keep');
+    expect(output).toContain('[mcp_servers.local]');
+    expect(output).not.toContain('mcp_servers.old');
+    expect(provider.parse(output)).toEqual({ local: servers.local! });
   });
 
-  test("falls back to a fresh document for invalid TOML", () => {
-    const output = generate(provider, { local: servers.local! }, "invalid {{{");
-    expect(output).toContain("[mcp_servers.local]");
+  test('rejects invalid existing TOML', () => {
+    expect(() => generate(provider, { local: servers.local! }, 'invalid {{{')).toThrow();
+  });
+
+  test('removes only the managed section during cleanup', () => {
+    const existing = `# before
+model='gpt-5'
+
+[mcp_servers.old]
+# managed comment
+command='old'
+
+# after
+[features]
+shell = true # keep formatting
+`;
+    const output = provider.cleanup(existing, context);
+    expect(output).toContain('# before');
+    expect(output).toContain("model='gpt-5'");
+    expect(output).toContain('# managed comment');
+    expect(output).toContain('# after');
+    expect(output).toContain('[features]');
+    expect(output).toContain('shell = true # keep formatting');
+    expect(output).not.toContain('mcp_servers');
   });
 });
 
-describe("provider parsing validation", () => {
-  test("rejects malformed server structures", () => {
+describe('provider parsing validation', () => {
+  test('rejects malformed existing JSONC during generation and cleanup', () => {
+    const provider = new ClaudeCodeProvider({ homeDirectory });
+    expect(() => generate(provider, servers, '{ malformed')).toThrow();
+    expect(() => provider.cleanup('{ malformed', context)).toThrow();
+  });
+
+  test('rejects malformed server structures', () => {
     const provider = new ClaudeCodeProvider({ homeDirectory });
     expect(() => provider.parse('{ "mcpServers": { "bad": { "type": "stdio" } } }')).toThrow();
   });
 
-  test("rejects non-canonical server names", () => {
+  test('rejects non-canonical server names', () => {
     const provider = new ClaudeCodeProvider({ homeDirectory });
     expect(() =>
       provider.parse('{ "mcpServers": { "bad server": { "command": "npx" } } }'),

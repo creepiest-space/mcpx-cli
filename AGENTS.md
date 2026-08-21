@@ -13,7 +13,7 @@
 - `packages/core` owns canonical Zod schemas, config persistence, provider contracts, detection,
   synchronization, and filesystem ports. It must not depend on provider formats or terminal UI.
 - `packages/providers` owns provider-specific JSON, JSONC, and TOML adapters and the default
-  provider registry. It depends on `@mcpx/core`.
+  provider registry. It depends on `@creepiest-space/mcpx-core`.
 - `apps/cli` owns Citty routing, commands, output, dependency composition, and the Clack wizard. It
   depends on both packages.
 - Preserve this dependency direction: `apps/cli -> packages/providers -> packages/core` and
@@ -26,6 +26,8 @@
 - Run Oxlint with `bun run lint`; use `bun run lint:fix` only for safe mechanical fixes.
 - Run the complete static quality gate with `bun run check`.
 - Run all tests with `bun run test` and build all packages with `bun run build`.
+- Create Conventional Commit messages interactively with `bun run commit`; Lefthook applies Oxlint
+  and Oxfmt fixes to staged files and Commitlint validates commit messages.
 - Run a focused test from the repository root with, for example,
   `bun test apps/cli/test/commands.test.ts`.
 

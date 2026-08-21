@@ -1,1 +1,1 @@
-export * from "./config-detector.ts";
+export * from './config-detector.ts';

@@ -1,8 +1,9 @@
-import { randomUUID } from "node:crypto";
-import { constants } from "node:fs";
-import { access, mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import type { FileSystem } from "@mcpx/core";
+import { randomUUID } from 'node:crypto';
+import { constants } from 'node:fs';
+import { access, mkdir, open, readFile, rename, unlink } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+
+import type { FileSystem } from '@creepiest-space/mcpx-core';
 
 const DEFAULT_FILE_MODE = 0o600;
 
@@ -12,13 +13,13 @@ export class NodeFileSystem implements FileSystem {
       await access(filePath, constants.F_OK);
       return true;
     } catch (error) {
-      if (isNodeError(error, "ENOENT")) return false;
+      if (isNodeError(error, 'ENOENT')) return false;
       throw error;
     }
   }
 
   read(filePath: string): Promise<string> {
-    return readFile(filePath, "utf8");
+    return readFile(filePath, 'utf8');
   }
 
   write(filePath: string, content: string): Promise<void> {
@@ -30,23 +31,22 @@ export class NodeFileSystem implements FileSystem {
       await unlink(filePath);
       return true;
     } catch (error) {
-      if (isNodeError(error, "ENOENT")) return false;
+      if (isNodeError(error, 'ENOENT')) return false;
       throw error;
     }
   }
 }
 
-export async function atomicWriteFile(filePath: string, content: string): Promise<void> {
+async function atomicWriteFile(filePath: string, content: string): Promise<void> {
   const directory = dirname(filePath);
   const temporaryPath = join(directory, `.${randomUUID()}.mcpx-tmp`);
   await mkdir(directory, { recursive: true });
 
-  const mode = await getExistingMode(filePath);
   let handle: Awaited<ReturnType<typeof open>> | undefined;
 
   try {
-    handle = await open(temporaryPath, "wx", mode);
-    await handle.writeFile(content, "utf8");
+    handle = await open(temporaryPath, 'wx', DEFAULT_FILE_MODE);
+    await handle.writeFile(content, 'utf8');
     await handle.sync();
     await handle.close();
     handle = undefined;
@@ -58,15 +58,6 @@ export async function atomicWriteFile(filePath: string, content: string): Promis
   }
 }
 
-async function getExistingMode(filePath: string): Promise<number> {
-  try {
-    return (await stat(filePath)).mode & 0o777;
-  } catch (error) {
-    if (isNodeError(error, "ENOENT")) return DEFAULT_FILE_MODE;
-    throw error;
-  }
-}
-
 function isNodeError(error: unknown, code: string): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error && error.code === code;
+  return error instanceof Error && 'code' in error && error.code === code;
 }

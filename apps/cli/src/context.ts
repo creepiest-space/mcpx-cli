@@ -1,13 +1,15 @@
-import { homedir } from "node:os";
-import type { ConfigScope, FileSystem, ProviderRegistry } from "@mcpx/core";
-import { createProviderRegistry } from "@mcpx/providers";
-import { NodeFileSystem } from "./infrastructure/node-file-system.ts";
-import type { Output } from "./output";
-import { PlainOutput } from "./output";
+import { homedir } from 'node:os';
+
+import type { ConfigScope, FileSystem, ProviderRegistry } from '@creepiest-space/mcpx-core';
+import { createProviderRegistry } from '@creepiest-space/mcpx-providers';
+
+import { NodeFileSystem } from './infrastructure/node-file-system.ts';
+import type { Output } from './output/index.ts';
+import { PlainOutput } from './output/index.ts';
 
 export interface CliContext {
   projectRoot: string;
-  scope?: ConfigScope;
+  scope?: ConfigScope | undefined;
   verbose: boolean;
   homeDirectory: string;
   fileSystem: FileSystem;
@@ -17,10 +19,10 @@ export interface CliContext {
 
 export interface CreateCliContextOptions {
   projectRoot: string;
-  scope?: ConfigScope;
-  verbose?: boolean;
-  homeDirectory?: string;
-  environment?: Readonly<Record<string, string | undefined>>;
+  scope?: ConfigScope | undefined;
+  verbose?: boolean | undefined;
+  homeDirectory?: string | undefined;
+  environment?: Readonly<Record<string, string | undefined>> | undefined;
 }
 
 export function createCliContext(options: CreateCliContextOptions): CliContext {

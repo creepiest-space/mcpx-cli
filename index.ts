@@ -1,3 +1,3 @@
 #!/usr/bin/env bun
 
-import "./apps/cli/src/index.ts";
+await import('./apps/cli/src/index.ts');

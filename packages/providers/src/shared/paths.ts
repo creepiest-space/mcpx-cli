@@ -1,10 +1,11 @@
-import { homedir } from "node:os";
-import { resolve } from "node:path";
-import type { ConfigScope, ProviderMetadata } from "@mcpx/core";
+import { homedir } from 'node:os';
+import { resolve } from 'node:path';
+
+import type { ConfigScope, ProviderMetadata } from '@creepiest-space/mcpx-core';
 
 export interface ProviderPathOptions {
-  homeDirectory?: string;
-  environment?: Readonly<Record<string, string | undefined>>;
+  homeDirectory?: string | undefined;
+  environment?: Readonly<Record<string, string | undefined>> | undefined;
 }
 
 export function getHomeDirectory(options: ProviderPathOptions): string {
@@ -20,7 +21,7 @@ export function resolveProviderPath(
     throw new Error(`${metadata.displayName} does not support ${scope} configuration`);
   }
 
-  if (scope === "global") {
+  if (scope === 'global') {
     if (!metadata.globalConfigPath) {
       throw new Error(`${metadata.displayName} does not define a global configuration path`);
     }

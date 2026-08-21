@@ -1,11 +1,12 @@
-import { resolve } from "node:path";
+import { resolve } from 'node:path';
+
 import type {
   ConfigScope,
   McpServerConfig,
   Provider,
   ProviderCapabilities,
   ProviderName,
-} from "../../src";
+} from '../../src/index.ts';
 
 export class FakeProvider implements Provider {
   readonly displayName: string;
@@ -26,13 +27,20 @@ export class FakeProvider implements Provider {
     return `${JSON.stringify({ servers }, null, 2)}\n`;
   }
 
+  cleanup(content: string): string {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    if (!('servers' in parsed)) return content;
+    delete parsed.servers;
+    return `${JSON.stringify(parsed, null, 2)}\n`;
+  }
+
   parse(content: string): Record<string, McpServerConfig> {
     const parsed = JSON.parse(content) as { servers?: Record<string, McpServerConfig> };
-    if (!parsed.servers) throw new TypeError("missing servers");
+    if (!parsed.servers) throw new TypeError('missing servers');
     return parsed.servers;
   }
 
   resolveConfigPath(projectRoot: string, scope: ConfigScope): string {
-    return scope === "global" ? this.globalConfigPath! : resolve(projectRoot, this.configPath);
+    return scope === 'global' ? this.globalConfigPath! : resolve(projectRoot, this.configPath);
   }
 }

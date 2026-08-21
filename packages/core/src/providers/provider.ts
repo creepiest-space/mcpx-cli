@@ -1,4 +1,4 @@
-import type { ConfigScope, McpServerConfig, ProviderName } from "../types/canonical.ts";
+import type { ConfigScope, McpServerConfig, ProviderName } from '../types/canonical.ts';
 
 export interface ProviderCapabilities {
   project: boolean;
@@ -24,6 +24,7 @@ export interface Provider extends ProviderMetadata {
     servers: Readonly<Record<string, McpServerConfig>>,
     context: ProviderGenerateContext,
   ): string;
+  cleanup(existingContent: string, context: ProviderGenerateContext): string;
   parse(content: string): Record<string, McpServerConfig>;
   resolveConfigPath(projectRoot: string, scope: ConfigScope): string;
   resolveConfigPaths?(projectRoot: string, scope: ConfigScope): readonly string[];

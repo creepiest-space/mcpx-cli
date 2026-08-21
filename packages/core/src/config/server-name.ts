@@ -1,4 +1,4 @@
-import { ServerNameSchema } from "../types/canonical.ts";
+import { ServerNameSchema } from '../types/canonical.ts';
 
 export { ServerNameSchema };
 
